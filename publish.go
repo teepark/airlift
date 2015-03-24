@@ -59,6 +59,19 @@ func publish() {
 	}
 }
 
+func validIFName(name string) bool {
+	if name == "lo" {
+		return false
+	}
+	if strings.HasPrefix(name, "docker") {
+		return false
+	}
+	if strings.HasPrefix(name, "vbox") {
+		return false
+	}
+	return true
+}
+
 func getIP() (net.IP, error) {
 	ifaces, err := net.Interfaces()
 	if err != nil {
@@ -66,7 +79,7 @@ func getIP() (net.IP, error) {
 	}
 
 	for _, iface := range ifaces {
-		if strings.HasPrefix(iface.Name, "enp") || strings.HasPrefix(iface.Name, "eth") {
+		if validIFName(iface.Name) {
 			addrs, err := iface.Addrs()
 			if err != nil {
 				return nil, err

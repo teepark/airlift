@@ -27,6 +27,8 @@ func receive() {
 		return
 	}
 	close(entries)
+
+	os.Exit(1)
 }
 
 func printFrom(entry *mdns.ServiceEntry) bool {
