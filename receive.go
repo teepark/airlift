@@ -11,7 +11,8 @@ import (
 )
 
 func receive() {
-	entries := make(chan *mdns.ServiceEntry, 4)
+	entries := make(chan *mdns.ServiceEntry, 16)
+
 	go func() {
 		for entry := range entries {
 			if strings.Contains(entry.Name, "_airlift._tcp") {
@@ -22,8 +23,11 @@ func receive() {
 		}
 	}()
 
-	if err := mdns.Lookup("_airlift._tcp", entries); err != nil {
-		fmt.Fprintf(os.Stderr, "mdns lookup: %v\n", err)
+	qp := mdns.DefaultParams("_airlift._tcp")
+	qp.Entries = entries
+	qp.WantUnicastResponse = true
+	if err := mdns.Query(qp); err != nil {
+		fmt.Fprintf(os.Stderr, "mdns query: %v\n", err)
 		return
 	}
 	close(entries)

@@ -25,7 +25,7 @@ func publish() {
 		return
 	}
 
-	ip, err := getIP()
+	ips, err := getIPs()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "getIP: %v\n", err)
 		return
@@ -37,8 +37,8 @@ func publish() {
 		"",
 		"",
 		port,
-		[]net.IP{ip},
-		[]string{"airlift"},
+		ips,
+		nil,
 	)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "mdns newservice: %v\n", err)
@@ -72,29 +72,59 @@ func validIFName(name string) bool {
 	return true
 }
 
-func getIP() (net.IP, error) {
+func getIPs() ([]net.IP, error) {
 	ifaces, err := net.Interfaces()
 	if err != nil {
 		return nil, err
 	}
 
+	ip4s := make([]net.IP, 0)
+	ips := make([]net.IP, 0)
+
 	for _, iface := range ifaces {
-		if validIFName(iface.Name) {
-			addrs, err := iface.Addrs()
-			if err != nil {
-				return nil, err
+		if iface.Flags&net.FlagUp == 0 {
+			// interface down
+			continue
+		}
+		if iface.Flags&net.FlagLoopback != 0 {
+			// loopback interface
+			continue
+		}
+		if strings.HasPrefix(iface.Name, "docker") {
+			// docker0 -- needs special casing, can't figure out
+			// what's so special about it
+			continue
+		}
+
+		addrs, err := iface.Addrs()
+		if err != nil {
+			return nil, err
+		}
+
+		for _, addr := range addrs {
+			var ip net.IP
+			switch v := addr.(type) {
+			case *net.IPNet:
+				ip = v.IP
+			case *net.IPAddr:
+				ip = v.IP
 			}
 
-			for _, addr := range addrs {
-				if strings.Contains(addr.String(), ".") {
-					ip, _, err := net.ParseCIDR(addr.String())
-					return ip, err
-				}
+			if ip == nil || ip.IsLoopback() {
+				continue
+			}
+
+			ips = append(ips, ip)
+			if ip.To4() != nil {
+				ip4s = append(ip4s, ip)
 			}
 		}
 	}
 
-	return nil, nil
+	if len(ip4s) != 0 {
+		ips = ip4s
+	}
+	return ips, nil
 }
 
 type byteserver struct {
