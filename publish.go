@@ -65,7 +65,6 @@ func getIPs() ([]net.IP, error) {
 		return nil, err
 	}
 
-	ip4s := make([]net.IP, 0)
 	ips := make([]net.IP, 0)
 
 	for _, iface := range ifaces {
@@ -102,15 +101,9 @@ func getIPs() ([]net.IP, error) {
 			}
 
 			ips = append(ips, ip)
-			if ip.To4() != nil {
-				ip4s = append(ip4s, ip)
-			}
 		}
 	}
 
-	if len(ip4s) != 0 {
-		ips = ip4s
-	}
 	return ips, nil
 }
 
