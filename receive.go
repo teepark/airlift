@@ -6,12 +6,15 @@ import (
 	"net"
 	"os"
 	"strings"
+	"sync"
 
 	"github.com/hashicorp/mdns"
 )
 
 func receive() {
 	entries := make(chan *mdns.ServiceEntry, 16)
+	wg := &sync.WaitGroup{}
+	wg.Add(1)
 
 	go func() {
 		for entry := range entries {
@@ -21,6 +24,7 @@ func receive() {
 				}
 			}
 		}
+		wg.Done()
 	}()
 
 	qp := mdns.DefaultParams("_airlift._tcp")
@@ -32,6 +36,7 @@ func receive() {
 	}
 	close(entries)
 
+	wg.Wait()
 	os.Exit(1)
 }
 
