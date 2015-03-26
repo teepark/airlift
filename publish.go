@@ -59,19 +59,6 @@ func publish() {
 	}
 }
 
-func validIFName(name string) bool {
-	if name == "lo" {
-		return false
-	}
-	if strings.HasPrefix(name, "docker") {
-		return false
-	}
-	if strings.HasPrefix(name, "vbox") {
-		return false
-	}
-	return true
-}
-
 func getIPs() ([]net.IP, error) {
 	ifaces, err := net.Interfaces()
 	if err != nil {
